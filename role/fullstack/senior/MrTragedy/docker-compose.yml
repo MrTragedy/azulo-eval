@@ -16,6 +16,20 @@ services:
             - ./init.sql:/docker-entrypoint-initdb.d/init.sql
         networks:
             - app-network
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "mysqladmin",
+                    "ping",
+                    "-h127.0.0.1",
+                    "-uroot",
+                    "-proot_password"
+                ]
+            interval: 30s
+            retries: 3
+            start_period: 30s
+            timeout: 10s
 
     directus:
         image: directus/directus:latest
@@ -34,7 +48,31 @@ services:
         ports:
             - "8055:8055"
         depends_on:
-            - mysql
+            mysql:
+                condition: service_healthy
+        networks:
+            - app-network
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "sh",
+                    "-c",
+                    "netstat -an | grep 8055 > /dev/null; if [ $? -ne 0 ]; then exit 1; fi;"
+                ]
+            interval: 10s
+            retries: 10
+            start_period: 30s
+            timeout: 10s
+
+    flyway:
+        image: flyway/flyway:latest
+        command: -url=jdbc:mysql://mysql:3306/airportart_db -baselineOnMigrate=true -user=user -password=user_password migrate
+        depends_on:
+            directus:
+                condition: service_healthy
+        volumes:
+            - ./migrations:/flyway/sql
         networks:
             - app-network
 
@@ -49,23 +87,8 @@ services:
         ports:
             - "8080:80"
         depends_on:
-            - mysql
-        networks:
-            - app-network
-
-    flyway:
-        build:
-            context: .
-            dockerfile: Dockerfile
-        container_name: flyway-container
-        environment:
-            FLYWAY_URL: jdbc:mysql://mysql:3306/airportart_db
-            FLYWAY_USER: user
-            FLYWAY_PASSWORD: user_password
-            FLYWAY_LOCATIONS: filesystem:/flyway/sql
-            FLYWAY_BASELINE_ON_MIGRATE: "true"
-        volumes:
-            - ./migrations:/flyway/sql
+            mysql:
+                condition: service_healthy
         networks:
             - app-network
 

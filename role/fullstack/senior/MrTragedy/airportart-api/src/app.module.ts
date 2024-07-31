@@ -4,7 +4,6 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { AirportsModule } from './airports/airports.module';
 import { HttpModule } from '@nestjs/axios';
-import { AirportOperatorsModule } from './airport-operators/airport-operators.module';
 
 @Module({
   imports: [
@@ -13,7 +12,6 @@ import { AirportOperatorsModule } from './airport-operators/airport-operators.mo
     }),
     HttpModule,
     AirportsModule,
-    AirportOperatorsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
